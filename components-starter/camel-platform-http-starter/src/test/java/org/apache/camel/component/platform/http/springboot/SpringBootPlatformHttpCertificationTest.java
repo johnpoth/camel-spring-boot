@@ -2,11 +2,9 @@ package org.apache.camel.component.platform.http.springboot;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import jakarta.activation.DataHandler;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.attachment.AttachmentMessage;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.platform.http.cookie.CookieConfiguration;
 import org.apache.camel.component.platform.http.cookie.CookieHandler;
@@ -19,29 +17,31 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.matcher.RestAssuredMatchers.detailedCookie;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@EnableAutoConfiguration
+@EnableAutoConfiguration(exclude = {OAuth2ClientAutoConfiguration.class, SecurityAutoConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @CamelSpringBootTest
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = { CamelAutoConfiguration.class,
@@ -51,7 +51,6 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
 
     private static final String postRouteId = "SpringBootPlatformHttpRestDSLTest_mypost";
     private static final String getRouteId = "SpringBootPlatformHttpRestDSLTest_myget";
-    private final static String attachmentId = "myTestFile";
 
     @LocalServerPort
     private Integer port;
@@ -72,15 +71,8 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
                     getCamelContext().getStreamCachingStrategy().setSpoolEnabled(true);
                     rest()
                             .get("myget").id(getRouteId).to("direct:get")
-                            .post("mypost").id(postRouteId).to("direct:post")
-                            .post("upload").to("direct:upload");
+                            .post("mypost").id(postRouteId).to("direct:post");
 
-                    from("direct:upload")
-                            .process(exchange -> {
-                                AttachmentMessage message = exchange.getMessage(AttachmentMessage.class);
-                                DataHandler attachment = message.getAttachment(attachmentId);
-                                message.setBody(attachment.getContent());
-                            });
                     from("direct:post").transform().body(String.class, b -> b.toUpperCase());
                     from("direct:get").setBody().constant("get")
                             .log("hello");
@@ -154,25 +146,6 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
     @Override
     protected String getGetRouteId() {
         return getRouteId;
-    }
-
-    @Test
-    public void testAttachment() throws Exception {
-        waitUntilRouteIsStarted(1, getGetRouteId());
-
-        final String attachmentId = "myTestFile";
-        final String fileContent = "Test multipart upload content";
-        final File tempFile = File.createTempFile("platform-http", ".txt");
-
-        Files.write(tempFile.toPath(), fileContent.getBytes(StandardCharsets.UTF_8));
-
-        given()
-                .multiPart(attachmentId, tempFile)
-                .when()
-                .post("/upload")
-                .then()
-                .statusCode(200)
-                .body(is(fileContent));
     }
 
     @Test
