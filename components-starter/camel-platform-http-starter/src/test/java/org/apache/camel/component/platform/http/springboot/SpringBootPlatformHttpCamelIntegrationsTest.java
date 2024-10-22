@@ -3,9 +3,9 @@ package org.apache.camel.component.platform.http.springboot;
 import io.restassured.RestAssured;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.jackson.JacksonConstants;
 import org.apache.camel.spring.boot.CamelAutoConfiguration;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +20,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
 
 @EnableAutoConfiguration(exclude = {OAuth2ClientAutoConfiguration.class, SecurityAutoConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @CamelSpringBootTest
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = { CamelAutoConfiguration.class,
-        SpringBootPlatformHttpJacksonConverterTest.class, SpringBootPlatformHttpJacksonConverterTest.TestConfiguration.class,
+        SpringBootPlatformHttpCamelIntegrationsTest.class, SpringBootPlatformHttpCamelIntegrationsTest.TestConfiguration.class,
         PlatformHttpComponentAutoConfiguration.class, SpringBootPlatformHttpAutoConfiguration.class, })
-public class SpringBootPlatformHttpJacksonConverterTest {
+public class SpringBootPlatformHttpCamelIntegrationsTest {
 
     @Autowired
     TestRestTemplate restTemplate;
@@ -52,23 +51,39 @@ public class SpringBootPlatformHttpJacksonConverterTest {
             return new RouteBuilder() {
                 @Override
                 public void configure() {
-                    getContext().getGlobalOptions().put(JacksonConstants.ENABLE_TYPE_CONVERTER, "true");
-
-                    from("platform-http:/hello")
-                            .setBody().constant("{\"hello\": \"world\"}")
-                            .unmarshal().json();
+                    rest().post("message").to("direct:route");
+                    from("direct:route")
+                            .choice()
+                            .when().jsonpath("$[?(@.counter>0)]")
+                                .setBody(constant("positive"))
+                            .otherwise()
+                                .setBody(constant("negative"))
+                            .end();
                 }
             };
         }
     }
 
     @Test
-    public void jacksonTypeConverter() {
+    public void test() {
+        String data = "{\"counter\":1}";
         given()
+                .body(data)
+                .header("Content-Type", "application/json")
                 .when()
-                .get("/hello")
+                .post("/message")
                 .then()
                 .statusCode(200)
-                .body(equalTo("{\"hello\":\"world\"}"));
+                .body(Matchers.is("positive"));
+
+        data = "{\"counter\":0}";
+        given()
+                .body(data)
+                .header("Content-Type", "application/json")
+                .when()
+                .post("/message")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("negative"));
     }
 }

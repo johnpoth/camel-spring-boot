@@ -9,7 +9,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.platform.http.spi.Method;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
-import org.apache.camel.spi.RestConfiguration;
 import org.apache.camel.spring.boot.CamelAutoConfiguration;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.hamcrest.Matcher;
@@ -26,9 +25,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;

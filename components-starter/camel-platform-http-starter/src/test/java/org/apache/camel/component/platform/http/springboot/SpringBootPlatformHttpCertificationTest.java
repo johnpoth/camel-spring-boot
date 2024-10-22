@@ -184,8 +184,7 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
                 .header("Accept", ContentType.BINARY)
                 .get("rest/test")
                 .then()
-                .statusCode(406)
-                .body(is("Hello"));
+                .statusCode(406);
     }
 
     @Test

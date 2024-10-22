@@ -97,7 +97,14 @@
       <groupId>org.wiremock.integrations</groupId>
       <artifactId>wiremock-spring-boot</artifactId>
       <version>3.0.2</version>
+      <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.camel.springboot</groupId>
+      <artifactId>camel-jsonpath-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!--START OF GENERATED CODE-->
     <dependency>
       <groupId>org.apache.camel.springboot</groupId>
