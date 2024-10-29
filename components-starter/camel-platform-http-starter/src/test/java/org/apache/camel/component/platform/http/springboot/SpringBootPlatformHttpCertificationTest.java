@@ -89,6 +89,9 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
                     from("platform-http:/streaming?useStreaming=true")
                             .log("Done echoing back request body as response body");
 
+                    from("platform-http:/helloStreaming?useStreaming=true")
+                            .transform().simple("Hello ${body}");
+
                     from("platform-http:/streamingFileRequestResponseBody?useStreaming=true")
                             .log("Done processing request");
 
@@ -192,7 +195,7 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
         String requestBody = "Vert.x Platform HTTP";
         given()
                 .body(requestBody)
-                .post("/streaming")
+                .post("/helloStreaming")
                 .then()
                 .statusCode(200)
                 .body(is("Hello " + requestBody));
