@@ -87,7 +87,7 @@ public class SpringBootPlatformHttpCertificationTest extends PlatformHttpBase {
                             .setBody(simple("Hello"));
 
                     from("platform-http:/streaming?useStreaming=true")
-                            .transform().simple("Hello ${body}");
+                            .log("Done echoing back request body as response body");
 
                     from("platform-http:/streamingFileRequestResponseBody?useStreaming=true")
                             .log("Done processing request");
